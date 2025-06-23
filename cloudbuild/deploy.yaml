@@ -1,0 +1,23 @@
+steps:
+  - id: Initiate gcloud
+    name: gcr.io/cloud-builders/gcloud
+    entrypoint: sh
+    args:
+      [
+        "/workspace/cloudbuild/scripts/gcloud_config.sh",
+        "${PROJECT_ID}",
+        "${LOCATION}",
+      ]
+  - id: Build and deploy functions
+    name: node:22-alpine
+    entrypoint: sh
+    args:
+      [
+        "/workspace/cloudbuild/scripts/build_deploy.sh",
+        "${PROJECT_ID}",
+        "${_SERVICE_ACCOUNT}",
+        "${_NODE_ENV}",
+        "${_WORKSPACE}",
+      ]  
+timeout: 1000s
+logsBucket: "gs://build-logs/blackpaw-admin"
