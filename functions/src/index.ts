@@ -13,7 +13,6 @@ const logger = new Logger('Root');
 logger.setLogLevel('debug');
 
 const serviceAccount = process.env.SERVICE_ACCOUNT;
-const WORKSPACE = process.env.WORKSPACE;
 const region = 'europe-west1';
 
 setGlobalOptions({
@@ -24,7 +23,7 @@ setGlobalOptions({
     timeoutSeconds: 300,
     memory: '512MiB',
     ingressSettings: 'ALLOW_ALL',
-    secrets: [`${WORKSPACE}-blackpaw`],
+    secrets: [`contabo`],
 });
 
 /************

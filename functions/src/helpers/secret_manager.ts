@@ -12,8 +12,7 @@ export default class SecretsHelper {
     }
 
     async getSecret(name: string, sub?: string): Promise<any> {
-        const workspace = process.env.WORKSPACE;
-        const path: string = `projects/${process.env.GCLOUD_PROJECT}/secrets/${workspace}-${name}/versions/latest`;
+        const path: string = `projects/${process.env.PROJECT_NUMBER}/secrets/${name}/versions/latest`;
         const [version] = await this._client.accessSecretVersion({ name: path });
 
         const payload = JSON.parse(version.payload?.data?.toString()!);

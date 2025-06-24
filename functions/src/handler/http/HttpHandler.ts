@@ -11,9 +11,12 @@ export default class HttpHandler {
         this.logger.log(request.path, request.method);
         const { method, path } = request;
 
-        // if (process.env.NODE_ENV === 'local') {
-        if (method === 'POST' && path === '/cloudevents') {}
-        // }
+        if (process.env.NODE_ENV === 'local') {
+            if (method === 'POST' && path === '/cloudevents') { }
+            if (method === 'POST' && path === '/cron') { 
+                
+            }
+        }
 
         // return 405 METHOD NOT ALLOWED
         if (method !== 'POST') {

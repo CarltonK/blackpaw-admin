@@ -1,5 +1,5 @@
 import { Logger } from '@firebase/logger';
-import { Firestore } from 'firebase-admin/firestore';
+import { Firestore, Timestamp } from 'firebase-admin/firestore';
 import ContaboHandler from '../external/ContaboHandler';
 
 export default class CronHandler {
@@ -13,8 +13,8 @@ export default class CronHandler {
         this.contabo = contabo;
     }
 
-    private getDateDiffInDays(from: string, to: Date): number {
-        const billingDate = new Date(from);
+    private getDateDiffInDays(from: Timestamp | Date, to: Date): number {
+        const billingDate = from instanceof Timestamp ? from.toDate() : from;
         const timeDiff = to.getTime() - billingDate.getTime();
         return Math.floor(timeDiff / (1000 * 60 * 60 * 24));
     }
@@ -27,6 +27,11 @@ export default class CronHandler {
             const { name, status, contabo, nextBillingDate } = doc.data();
             const { vmId } = contabo;
             this.logger.log(`Checking payment status for ${name}`);
+
+            if (!nextBillingDate) {
+                this.logger.log(`❌ Exiting: Next billing date not set`);
+                continue;
+            }
 
             const daysDiff = this.getDateDiffInDays(nextBillingDate, today);
 
@@ -54,6 +59,9 @@ export default class CronHandler {
                 this.logger.log(msg);
                 // await sendReminder(client, msg);
             }
+
+            this.logger.log(`Finalized checking payment status for ${name}`);
         }
+        return;
     }
 }
