@@ -49,13 +49,13 @@ export default class CronHandler {
                 // await sendReminder(client, msg);
             } else if (daysDiff >= 2 && status === 'active') {
                 const msg = '❌ Your service has been suspended due to non-payment.';
-                
+
                 // Stop VM
-                await this.contabo.stop(vmId);
+                await this.contabo.performInstanceAction(vmId, 'stop');
 
                 // Update document
                 await doc.ref.update({ status: 'suspended' });
-                
+
                 this.logger.log(msg);
                 // await sendReminder(client, msg);
             }

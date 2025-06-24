@@ -9,10 +9,14 @@ export default class ContaboHandler {
   private logger: Logger = new Logger('ContaboHandler');
   private secretsHelper: SecretsHelper;
 
+  private secretsLoaded: boolean = false;
   private clientId!: string;
   private clientSecret!: string;
   private apiUser!: string;
   private apiPassword!: string;
+
+  private readonly AUTH_URL = 'https://auth.contabo.com/auth/realms/contabo/protocol/openid-connect/token';
+  private readonly BASE_COMPUTE_URL = 'https://api.contabo.com/v1/compute/instances';
 
   constructor(secretsHelper: SecretsHelper) {
     this.logger.setLogLevel('debug');
@@ -20,12 +24,16 @@ export default class ContaboHandler {
   }
 
   private async loadSecrets() {
+    if (this.secretsLoaded) return;
+
     if (!this.clientId) {
       const secrets = await this.secretsHelper.getSecret('contabo');
       this.clientId = secrets.client_id;
       this.clientSecret = secrets.client_secret;
       this.apiUser = secrets.api_user;
       this.apiPassword = secrets.api_password;
+
+      this.secretsLoaded = true;
     }
   }
 
@@ -39,7 +47,7 @@ export default class ContaboHandler {
     const now = Date.now();
     if (this.token && now < this.tokenExpiresAt - 60 * 1000) return; // reuse if still valid
 
-    const response = await axios.post('https://auth.contabo.com/auth/realms/contabo/protocol/openid-connect/token', new URLSearchParams({
+    const response = await axios.post(this.AUTH_URL, new URLSearchParams({
       client_id: this.clientId,
       client_secret: this.clientSecret,
       grant_type: 'password',
@@ -55,18 +63,13 @@ export default class ContaboHandler {
     this.tokenExpiresAt = now + response.data.expires_in * 1000;
   }
 
-  async start(instanceId: string): Promise<void> {
-    this.logger.log(`[Contabo] Starting instance: ${instanceId}`);
-    return;
-  }
+  async performInstanceAction(instanceId: string, action: 'start' | 'stop'): Promise<void> {
+    await this.authenticate();
 
-  async stop(instanceId: string): Promise<void> {
-    this.logger.log(`[Contabo] Stopping instance: ${instanceId}`);
+    const url = `${this.BASE_COMPUTE_URL}/${instanceId}/actions/${action}`;
+    this.logger.log(`[Contabo] Sending '${action}' request for instance: ${instanceId}`);
 
     try {
-      await this.authenticate();
-      const url = `https://api.contabo.com/v1/compute/instances/${instanceId}/actions/stop`;
-
       const response = await axios.post(url, {}, {
         headers: {
           Authorization: `Bearer ${this.token}`,
@@ -74,11 +77,10 @@ export default class ContaboHandler {
         },
       });
 
-      this.logger.log(`[Contabo] Stopped instance ${instanceId}. Response:`, response.data);
+      this.logger.log(`[Contabo] ${action} instance ${instanceId} successful. Response:`, response.data);
     } catch (error: any) {
-      this.logger.error(`[Contabo] Failed to stop instance ${instanceId}:`, error?.response?.data || error.message);
-      throw new Error('Failed to stop VM via Contabo API');
+      this.logger.error(`[Contabo] Failed to ${action} instance ${instanceId}:`, error?.response?.data || error.message);
+      throw new Error(`Failed to ${action} VM via Contabo API`);
     }
-    return;
   }
 }
