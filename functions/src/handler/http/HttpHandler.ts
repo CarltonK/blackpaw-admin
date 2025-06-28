@@ -13,9 +13,7 @@ export default class HttpHandler {
 
         if (process.env.NODE_ENV === 'local') {
             if (method === 'POST' && path === '/cloudevents') { }
-            if (method === 'POST' && path === '/cron') { 
-                
-            }
+            if (method === 'POST' && path === '/cron') { }
         }
 
         // return 405 METHOD NOT ALLOWED
