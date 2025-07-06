@@ -1,10 +1,9 @@
-// import { setGlobalOptions, https, scheduler } from 'firebase-functions/v2';
-import { setGlobalOptions, https } from 'firebase-functions/v2';
+import { setGlobalOptions, https, scheduler } from 'firebase-functions/v2';
 import { Logger } from '@firebase/logger';
 import * as admin from 'firebase-admin';
 import HttpHandler from './handler/http/HttpHandler';
-// import CronHandler from './handler/cron/CronHandler';
-// import ContaboHandler from './handler/external/ContaboHandler';
+import CronHandler from './handler/cron/CronHandler';
+import ContaboHandler from './handler/external/ContaboHandler';
 import SecretsHelper from './helpers/secret_manager';
 
 require('dotenv').config();
@@ -33,11 +32,11 @@ setGlobalOptions({
  */
 const GlobalSecretsHelper = new SecretsHelper();
 const GlobalHttpHandler = new HttpHandler(admin.firestore(), GlobalSecretsHelper);
-// const GlobalContaboHandler = new ContaboHandler(GlobalSecretsHelper);
-// const GlobalCronHandler = new CronHandler(
-//     admin.firestore(),
-//     GlobalContaboHandler,
-// );
+const GlobalContaboHandler = new ContaboHandler(GlobalSecretsHelper);
+const GlobalCronHandler = new CronHandler(
+    admin.firestore(),
+    GlobalContaboHandler,
+);
 
 /*********
  * HTTPS *
@@ -57,7 +56,7 @@ export const mpesaCallback = https.onRequest(GlobalHttpHandler.handleCallbackReq
  * PUBSUB *
  **********
  */
-// export const nightlyReconciliation = scheduler.onSchedule(
-//     '0 2 * * *',
-//     GlobalCronHandler.nightlyReconciliation.bind(GlobalCronHandler),
-// );
+export const nightlyReconciliation = scheduler.onSchedule(
+    '0 2 * * *',
+    GlobalCronHandler.nightlyReconciliation.bind(GlobalCronHandler),
+);

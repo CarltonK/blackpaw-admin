@@ -173,7 +173,7 @@ export default class MpesaHandler {
 
                 // Update the payment document in Firestore
                 const update: any = {
-                    status: 'success',
+                    status: 'successful',
                     updatedAt: new Date(),
                     transaction,
                 };
