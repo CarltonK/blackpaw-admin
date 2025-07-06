@@ -3,7 +3,7 @@ import { Firestore, Timestamp } from 'firebase-admin/firestore';
 import ContaboHandler from '../external/ContaboHandler';
 
 export default class CronHandler {
-    private logger: Logger = new Logger('CronHandler');
+    private logger: Logger = new Logger('[CronHandler]');
     private db: Firestore;
     private contabo: ContaboHandler;
 

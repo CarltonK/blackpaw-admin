@@ -16,8 +16,8 @@ steps:
         "/workspace/cloudbuild/scripts/build_deploy.sh",
         "${PROJECT_ID}",
         "${_SERVICE_ACCOUNT}",
-        "${_NODE_ENV}",
-        "${_WORKSPACE}",
-      ]  
+        "production",
+        "${PROJECT_NUMBER}",
+      ]
 timeout: 1000s
 logsBucket: "gs://build-logs/blackpaw-admin"

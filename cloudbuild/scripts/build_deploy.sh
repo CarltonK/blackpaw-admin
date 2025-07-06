@@ -17,7 +17,7 @@ echo
 
 awk '{gsub(/<SERVICE_ACCOUNT>/,"'$2'")}1' .env > tmp.env && mv tmp.env .env
 awk '{gsub(/<NODE_ENV>/,"'$3'")}1' .env > tmp.env && mv tmp.env .env
-awk '{gsub(/<WORKSPACE>/,"'$4'")}1' .env > tmp.env && mv tmp.env .env
+awk '{gsub(/<PROJECT_NUMBER>/,"'$4'")}1' .env > tmp.env && mv tmp.env .env
 
 echo
 echo "**************************************"

@@ -6,7 +6,7 @@ import SecretsHelper from '../../helpers/secret_manager';
 export default class ContaboHandler {
   private token: string | null = null;
   private tokenExpiresAt: number = 0;
-  private logger: Logger = new Logger('ContaboHandler');
+  private logger: Logger = new Logger('[ContaboHandler]');
   private secretsHelper: SecretsHelper;
 
   private secretsLoaded: boolean = false;

@@ -2,7 +2,7 @@ import { Logger } from '@firebase/logger';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 
 export default class SecretsHelper {
-    private logger: Logger = new Logger('SecretsHelper');
+    private logger: Logger = new Logger('[SecretsHelper]');
     private _client: SecretManagerServiceClient;
     secrets: Record<string, any> = {};
 
