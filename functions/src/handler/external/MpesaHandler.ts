@@ -206,10 +206,13 @@ export default class MpesaHandler {
                             if (status === 'suspended') {
                                 if (amountPaid >= amountDue) {
                                     this.logger.log(`Amount paid (${amountPaid}) covers due (${amountDue}), resuming VM`);
+                                    await this.contaboHandler.performInstanceAction(vmId, 'start');
+
+                                    // Update document
                                     await clientDoc.ref.update({
                                         nextBillingDate: Timestamp.fromMillis(Date.now() + 31 * 24 * 60 * 60 * 1000),
+                                        status: 'active',
                                     });
-                                    await this.contaboHandler.performInstanceAction(vmId, 'start');
                                 }
 
                                 if (amountPaid > amountDue) {
