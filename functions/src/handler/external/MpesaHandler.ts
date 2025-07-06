@@ -113,17 +113,18 @@ export default class MpesaHandler {
                 {
                     headers: {
                         Authorization: `Bearer ${accessToken}`,
+                        Accept: 'application/json',
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json',
                     },
                 }
             );
 
             await this.db.collection('payments').doc(reference).update({
                 status: 'initiated',
+                data: res.data,
             });
 
-            this.logger.debug('STK Push response:', res.data);
+            this.logger.debug('STK push initiated successfully');
             return {
                 success: true,
                 message: 'STK push initiated successfully',
