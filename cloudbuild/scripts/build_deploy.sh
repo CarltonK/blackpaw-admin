@@ -9,6 +9,7 @@ npm install --location=global firebase-tools@latest pnpm
 cd ./functions
 pnpm install
 
+pnpm config set ignore-workspace-root-check true
 pnpm add @google-cloud/functions-framework
 
 echo
