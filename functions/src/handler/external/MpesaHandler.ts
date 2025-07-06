@@ -89,9 +89,9 @@ export default class MpesaHandler {
                 PartyA: Number(formattedPhone),
                 PartyB: Number(this.shortcode),
                 PhoneNumber: Number(formattedPhone),
-                CallBackURL: `https://google.com${this.callbackUrl}`,
-                AccountReference: reference,
-                TransactionDesc: 'Payment request',
+                CallBackURL: this.callbackUrl,
+                AccountReference: `Booking ${reference}`,
+                TransactionDesc: `Booking ${reference}`,
             };
 
             const res = await axios.post(
@@ -101,6 +101,7 @@ export default class MpesaHandler {
                     headers: {
                         Authorization: `Bearer ${accessToken}`,
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                     },
                 }
             );

@@ -9,6 +9,8 @@ npm install --location=global firebase-tools@latest pnpm
 cd ./functions
 pnpm install
 
+pnpm add @google-cloud/functions-framework
+
 echo
 echo "**************************************"
 echo "* Set Global Variables *"
