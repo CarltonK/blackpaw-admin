@@ -2,6 +2,7 @@ import axios from 'axios';
 import { Logger } from '@firebase/logger';
 import { Firestore, Timestamp } from 'firebase-admin/firestore';
 import SecretsHelper from '../../helpers/secret_manager';
+import ContaboHandler from './ContaboHandler';
 
 interface PaymentData {
     clientId: string;
@@ -33,10 +34,13 @@ export default class MpesaHandler {
     private callbackUrl!: string;
     private baseUrl!: string;
 
+    private contaboHandler: ContaboHandler;
+
     constructor(db: Firestore, secretsHelper: SecretsHelper) {
         this.logger.setLogLevel('debug');
         this.db = db;
         this.secretsHelper = secretsHelper;
+        this.contaboHandler = new ContaboHandler(this.secretsHelper);
     }
 
     async initiatePayment(data: PaymentData): Promise<{ success: boolean; message: string; details?: any }> {
@@ -142,6 +146,7 @@ export default class MpesaHandler {
     async handleMpesaCallback(reference: string, stkCallback: any): Promise<any> {
         const paymentRef = this.db.collection('payments').doc(reference);
         try {
+            const paymentDoc = await paymentRef.get();
             let transaction: Record<string, any> | undefined = undefined;
 
             const { CallbackMetadata, ResultCode, CheckoutRequestID } = stkCallback;
@@ -165,6 +170,7 @@ export default class MpesaHandler {
                     trxDate,
                     trxID,
                 } as MpesaTransaction;
+
                 // Update the payment document in Firestore
                 const update: any = {
                     status: 'success',
@@ -174,6 +180,52 @@ export default class MpesaHandler {
                 await paymentRef.set(update, { merge: true });
 
                 this.logger.log(`Successfully processed M-Pesa payment for reference: ${reference}`);
+
+                const amountPaid = parseFloat(trxAmount ?? '0');
+
+                // === Follow-up on Client if Exists ===
+                if (paymentDoc.exists) {
+                    const paymentData = paymentDoc.data()!;
+                    const clientId = paymentData.clientId;
+
+                    if (clientId) {
+                        const clientDoc = await this.db.collection('clients').doc(clientId).get();
+
+                        if (clientDoc.exists) {
+                            const {
+                                status,
+                                payment: { amount: amountDue },
+                                contabo: { vmId },
+                            } = clientDoc.data() as {
+                                status: string;
+                                payment: { amount: number };
+                                name: string;
+                                contabo: { vmId: string };
+                            };
+
+                            if (status === 'suspended') {
+                                if (amountPaid >= amountDue) {
+                                    this.logger.log(`Amount paid (${amountPaid}) covers due (${amountDue}), resuming VM`);
+                                    await this.contaboHandler.performInstanceAction(vmId, 'start');
+                                }
+
+                                if (amountPaid > amountDue) {
+                                    const overpayment = amountPaid - amountDue;
+                                    await this.db.collection('overpayments').add({
+                                        clientId,
+                                        reference,
+                                        amountPaid,
+                                        amountDue,
+                                        overpayment,
+                                        recordedAt: new Date(),
+                                    });
+
+                                    this.logger.log(`Logged overpayment of ${overpayment} for client ${clientId}`);
+                                }
+                            }
+                        }
+                    }
+                }
                 return;
             } else {
                 const failData = {
@@ -206,7 +258,7 @@ export default class MpesaHandler {
             await this.db.collection('mpesa_callbacks').add({
                 reference,
                 receivedAt: new Date(),
-                payload: stkCallback
+                payload: stkCallback,
             });
         }
     }
