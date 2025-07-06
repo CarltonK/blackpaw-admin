@@ -67,7 +67,7 @@ export default class ContaboHandler {
     await this.authenticate();
 
     const url = `${this.BASE_COMPUTE_URL}/${instanceId}/actions/${action}`;
-    this.logger.log(`[Contabo] Sending '${action}' request for instance: ${instanceId}`);
+    this.logger.log(`Sending '${action}' request for instance: ${instanceId}`);
 
     try {
       const response = await axios.post(url, {}, {
@@ -77,10 +77,24 @@ export default class ContaboHandler {
         },
       });
 
-      this.logger.log(`[Contabo] ${action} instance ${instanceId} successful. Response:`, response.data);
+      this.logger.log(`${action} instance ${instanceId} successful. Response:`, response.data);
     } catch (error: any) {
-      this.logger.error(`[Contabo] Failed to ${action} instance ${instanceId}:`, error?.response?.data || error.message);
-      throw new Error(`Failed to ${action} VM via Contabo API`);
+      const errorMsg = error?.response?.data?.message || error.message;
+
+      // Graceful handling if the instance is already in desired state
+      if (errorMsg?.includes('Instance is already stopped') && action === 'stop') {
+        this.logger.log(`Instance ${instanceId} is already stopped. No action needed.`);
+        return;
+      }
+
+      if (errorMsg?.includes('Instance is already running') && action === 'start') {
+        this.logger.log(`Instance ${instanceId} is already running. No action needed.`);
+        return;
+      }
+
+      // Log and rethrow other errors
+      this.logger.error(`Failed to ${action} instance ${instanceId}:`, error?.response?.data || error.message);
+      return;
     }
   }
 }
