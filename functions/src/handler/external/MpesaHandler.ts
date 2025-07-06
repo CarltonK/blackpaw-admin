@@ -103,8 +103,8 @@ export default class MpesaHandler {
                 PartyB: Number(this.shortcode),
                 PhoneNumber: Number(formattedPhone),
                 CallBackURL: this.callbackUrl + `/${reference}`,
-                AccountReference: `Booking ${reference}`,
-                TransactionDesc: `Booking ${reference}`,
+                AccountReference: `${reference}`,
+                TransactionDesc: `${reference}`,
             };
 
             const res = await axios.post(
