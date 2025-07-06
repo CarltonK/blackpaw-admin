@@ -199,7 +199,7 @@ export default class MpesaHandler {
         this.baseUrl = secrets.base_url;
 
         this.secretsLoaded = true;
-        this.logger.debug('M-Pesa secrets loaded', secrets);
+        this.logger.debug('M-Pesa secrets loaded');
     }
 
     private async getAccessToken(): Promise<{ success: true; token: string } | { success: false; error: any }> {
@@ -217,7 +217,6 @@ export default class MpesaHandler {
 
         try {
             const auth = Buffer.from(`${this.consumerKey}:${this.consumerSecret}`).toString('base64');
-            this.logger.debug('Using Basic auth prefix:', auth.slice(0, 10) + '...');
 
             this.logger.debug('Requesting new access token');
 
