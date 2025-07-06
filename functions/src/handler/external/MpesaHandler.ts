@@ -7,6 +7,15 @@ interface PaymentData {
     clientId: string;
 }
 
+type MpesaTransaction = {
+    trxPhoneNumber?: string;
+    trxAmount?: string;
+    trxMpesaReceiptNumber?: string;
+    trxDate?: string;
+    trxID?: string;
+};
+
+
 export default class MpesaHandler {
     private logger: Logger = new Logger('[MpesaHandler]');
     private secretsHelper: SecretsHelper;
@@ -89,7 +98,7 @@ export default class MpesaHandler {
                 PartyA: Number(formattedPhone),
                 PartyB: Number(this.shortcode),
                 PhoneNumber: Number(formattedPhone),
-                CallBackURL: this.callbackUrl,
+                CallBackURL: this.callbackUrl + `/${reference}`,
                 AccountReference: `Booking ${reference}`,
                 TransactionDesc: `Booking ${reference}`,
             };
@@ -130,41 +139,52 @@ export default class MpesaHandler {
         }
     }
 
-    async handleMpesaCallback(callbackData: any): Promise<any> {
+    async handleMpesaCallback(reference: string, stkCallback: any): Promise<any> {
+        const paymentRef = this.db.collection('payments').doc(reference);
         try {
-            const {
-                Body: {
-                    stkCallback: {
-                        MerchantRequestID,
-                        CheckoutRequestID,
-                        ResultCode,
-                        ResultDesc,
-                        CallbackMetadata,
-                    },
-                },
-            } = callbackData;
+            let transaction: Record<string, any> | undefined = undefined;
 
-            const phone = CallbackMetadata?.Item?.find((i: any) => i.Name === 'PhoneNumber')?.Value;
-            const amount = CallbackMetadata?.Item?.find((i: any) => i.Name === 'Amount')?.Value;
-            const mpesaReceipt = CallbackMetadata?.Item?.find((i: any) => i.Name === 'MpesaReceiptNumber')?.Value;
+            const { CallbackMetadata, ResultCode, CheckoutRequestID } = stkCallback;
+            if (Number(ResultCode) === 0) {
+                const { Item } = CallbackMetadata;
 
-            this.logger.debug(`STK Callback for CheckoutRequestID: ${CheckoutRequestID}`);
+                const getValue = (name: string): string | undefined => {
+                    return Item.find((o: any) => o.Name === name)?.Value?.toString();
+                }
 
-            // Update the payment document in Firestore
-            const paymentRef = this.db.collection('payments').doc(MerchantRequestID);
-            const update: any = {
-                status: ResultCode === 0 ? 'success' : 'failed',
-                updatedAt: new Date(),
-                resultCode: ResultCode,
-                resultDesc: ResultDesc,
-                phone,
-                amount,
-                mpesaReceipt,
-            };
+                const trxPhoneNumber = getValue('PhoneNumber');
+                const trxAmount = getValue('Amount');
+                const trxMpesaReceiptNumber = getValue('MpesaReceiptNumber');
+                const trxDate = getValue('TransactionDate');
+                const trxID = CheckoutRequestID;
 
-            await paymentRef.set(update, { merge: true });
+                transaction = {
+                    trxPhoneNumber,
+                    trxAmount,
+                    trxMpesaReceiptNumber,
+                    trxDate,
+                    trxID,
+                } as MpesaTransaction;
+                // Update the payment document in Firestore
+                const update: any = {
+                    status: 'success',
+                    updatedAt: new Date(),
+                    transaction,
+                };
+                await paymentRef.set(update, { merge: true });
 
-            return update;
+                this.logger.log(`Successfully processed M-Pesa payment for reference: ${reference}`);
+                return;
+            } else {
+                const failData = {
+                    status: 'failed',
+                    updatedAt: new Date(),
+                    failureReason: stkCallback?.ResultDesc || 'Unknown reason',
+                    rawCallback: stkCallback,
+                };
+                await paymentRef.set(failData, { merge: true });
+                return;
+            }
         } catch (error: any) {
             const status = error?.response?.status;
             const statusText = error?.response?.statusText;
@@ -174,17 +194,22 @@ export default class MpesaHandler {
                 statusText,
                 body,
             });
-            return {
-                success: false,
-                error: {
-                    status,
-                    statusText,
-                    message: body,
-                },
-            };
+            const data = {
+                status: 'failed',
+                updatedAt: new Date(),
+            }
+
+            await paymentRef.set(data, { merge: true });
+
+            return;
+        } finally {
+            await this.db.collection('mpesa_callbacks').add({
+                reference,
+                receivedAt: new Date(),
+                payload: stkCallback
+            });
         }
     }
-
 
     private async loadSecrets() {
         if (this.secretsLoaded) return;

@@ -45,6 +45,8 @@ const GlobalHttpHandler = new HttpHandler(admin.firestore(), GlobalSecretsHelper
  */
 export const api = https.onRequest(GlobalHttpHandler.handleRequest.bind(GlobalHttpHandler));
 
+export const mpesaCallback = https.onRequest(GlobalHttpHandler.handleCallbackRequest.bind(GlobalHttpHandler));
+
 // export const devNightlyReconciliation = https.onRequest(async (req, res) => {
 //     await GlobalCronHandler.nightlyReconciliation();
 //     res.send('Nightly reconciliation completed (local test).');
