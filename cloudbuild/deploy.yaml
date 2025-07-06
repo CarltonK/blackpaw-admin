@@ -20,4 +20,4 @@ steps:
         "${PROJECT_NUMBER}",
       ]
 timeout: 1000s
-logsBucket: "gs://build-logs/blackpaw-admin"
+logsBucket: gs://blackpaw-build-logs/cloud-functions
