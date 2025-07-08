@@ -1,7 +1,7 @@
 {
   "name": "functions",
   "scripts": {
-    "preinstall": "npx only-allow pnpm", 
+    "preinstall": "npx only-allow pnpm",
     "dev": "concurrently \"tsc --watch\" \"firebase emulators:start --import=./../data --export-on-exit\"",
     "lint": "eslint \"src/**/*\"",
     "build": "tsc",
