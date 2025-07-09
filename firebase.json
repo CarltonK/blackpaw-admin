@@ -33,9 +33,26 @@
     "pubsub": {
       "port": 8085
     },
+    "hosting": {
+      "port": 5000
+    },
     "ui": {
       "enabled": true
     },
     "singleProjectMode": true
+  },
+  "hosting": {
+    "public": "dist",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
   }
 }
