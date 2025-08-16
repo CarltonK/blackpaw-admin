@@ -22,6 +22,7 @@
     "firebase-functions": "^6.0.1",
     "dotenv": "^16.5.0",
     "axios": "^1.10.0",
+    "@google-cloud/storage": "^7.16.0",
     "@google-cloud/secret-manager": "^6.0.1",
     "uuid": "^11.1.0"
   },
