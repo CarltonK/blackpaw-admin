@@ -1,19 +1,22 @@
 import { Logger } from '@firebase/logger';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
-import SecretsHelper from '../../helpers/secret_manager';
+import SecretsHelper from '../../helpers/secrets_helper';
+import GcsHelper from '../../helpers/storage_helper';
 
 export default class ContaboHandler {
   private token: string | null = null;
   private tokenExpiresAt: number = 0;
   private logger: Logger = new Logger('[ContaboHandler]');
   private secretsHelper: SecretsHelper;
+  private gcsHelper: GcsHelper;
 
   private secretsLoaded: boolean = false;
   private clientId!: string;
   private clientSecret!: string;
   private apiUser!: string;
   private apiPassword!: string;
+  private sshKeyIds!: number[];
 
   private readonly AUTH_URL = 'https://auth.contabo.com/auth/realms/contabo/protocol/openid-connect/token';
   private readonly BASE_COMPUTE_URL = 'https://api.contabo.com/v1/compute/instances';
@@ -21,6 +24,7 @@ export default class ContaboHandler {
   constructor(secretsHelper: SecretsHelper) {
     this.logger.setLogLevel('debug');
     this.secretsHelper = secretsHelper;
+    this.gcsHelper = new GcsHelper();
   }
 
   private async loadSecrets() {
@@ -32,6 +36,13 @@ export default class ContaboHandler {
       this.clientSecret = secrets.client_secret;
       this.apiUser = secrets.api_user;
       this.apiPassword = secrets.api_password;
+
+      if (Array.isArray(secrets.ssh_key_ids)) {
+        this.sshKeyIds = secrets.ssh_key_ids;
+      } else {
+        this.logger.log(`Setting default SSH Key Ids`);
+        this.sshKeyIds = [];
+      }
 
       this.secretsLoaded = true;
     }
@@ -61,6 +72,46 @@ export default class ContaboHandler {
 
     this.token = response.data.access_token;
     this.tokenExpiresAt = now + response.data.expires_in * 1000;
+  }
+
+  async createInstance(options: {
+    displayName: string;
+  }): Promise<any> {
+    await this.authenticate();
+
+    // ID for Debian 12, retrieved from the GET /v1/compute/images endpoint.
+    const debian12ImageId = '01592388-a3f5-470a-8692-747d73a4ab54';
+
+    const cloudInitScript = await this.gcsHelper.getScript('scripts', 'init.sh');
+    // Per Contabo API docs, the cloud-init script must be Base64 encoded.
+    const encodedCloudInit = Buffer.from(cloudInitScript).toString('base64');
+
+    const requestBody = {
+      displayName: options.displayName,
+      imageId: debian12ImageId,
+      productId: 'V92',
+      region: 'EU',
+      cloudInit: encodedCloudInit,
+      sshIds: this.sshKeyIds,
+    };
+
+    this.logger.log(`Sending 'create instance' request with name: ${options.displayName}`);
+
+    try {
+      const response = await axios.post(this.BASE_COMPUTE_URL, requestBody, {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          'x-request-id': this.generateUUID(),
+          'Content-Type': 'application/json',
+        },
+      });
+
+      this.logger.log(`Instance creation for ${options.displayName} successful. Response:`, response.data);
+      return response.data;
+    } catch (error: any) {
+      this.logger.error(`Failed to create instance ${options.displayName}:`, error?.response?.data || error.message);
+      throw error;
+    }
   }
 
   async performInstanceAction(instanceId: string, action: 'start' | 'stop'): Promise<void> {
