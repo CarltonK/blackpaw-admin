@@ -83,6 +83,8 @@ export default class ContaboHandler {
     const debian12ImageId = '01592388-a3f5-470a-8692-747d73a4ab54';
 
     const cloudInitScript = await this.gcsHelper.getScript('scripts', 'init.sh');
+    this.logger.log('Instance will be created with the script:', cloudInitScript);
+
     // Per Contabo API docs, the cloud-init script must be Base64 encoded.
     const encodedCloudInit = Buffer.from(cloudInitScript).toString('base64');
 
@@ -98,7 +100,7 @@ export default class ContaboHandler {
     this.logger.log(`Sending 'create instance' request with name: ${options.displayName}`);
 
     try {
-      const response = await axios.post(this.BASE_COMPUTE_URL, requestBody, {
+      const response = await axios.post('', requestBody, {
         headers: {
           Authorization: `Bearer ${this.token}`,
           'x-request-id': this.generateUUID(),

@@ -3,17 +3,20 @@ import { Logger } from '@firebase/logger';
 import SecretsHelper from '../../helpers/secrets_helper';
 import MpesaHandler from '../external/MpesaHandler';
 import { Firestore } from 'firebase-admin/firestore';
+import ContaboHandler from '../external/ContaboHandler';
 
 export default class HttpHandler {
     private db: Firestore;
     private secretsHelper: SecretsHelper;
     private logger: Logger = new Logger('[HttpHandler]');
     private mpesa: MpesaHandler;
+    private contabo: ContaboHandler;
 
     constructor(db: Firestore, secretsHelper: SecretsHelper) {
         this.logger.setLogLevel('debug');
         this.secretsHelper = secretsHelper;
         this.db = db;
+        this.contabo = new ContaboHandler(this.secretsHelper);
         this.mpesa = new MpesaHandler(this.db, this.secretsHelper);
     }
 
@@ -35,9 +38,26 @@ export default class HttpHandler {
             return;
         }
 
+        // Contabo
+        if (path === '/contabo/new') {
+            const { displayName } = request.body || {};
+            if (!displayName || displayName === '') {
+                response.status(400).send({
+                    status: false,
+                    message: '"displayName" must be provided when creating a new instance',
+                });
+                return;
+            }
+
+            await this.contabo.createInstance({ displayName })
+            response.status(200).send({
+                status: true,
+                message: 'Processing new instance creation',
+            });
+        }
+
         // Mpesa
         if (path.startsWith('/mpesa/')) {
-
             switch (path) {
                 case '/mpesa/initiate': {
                     const { clientId } = request.body || {};
@@ -76,7 +96,7 @@ export default class HttpHandler {
         return;
     }
 
-    async handleCallbackRequest(request: Request,response: Response<any>) {
+    async handleCallbackRequest(request: Request, response: Response<any>) {
         if (request.method.toUpperCase() !== 'POST') {
             this.logger.log('Access denied. Only POST method allowed');
             response.status(200).send({ success: true });
