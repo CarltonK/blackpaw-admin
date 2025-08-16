@@ -4,7 +4,7 @@ import * as admin from 'firebase-admin';
 import HttpHandler from './handler/http/HttpHandler';
 import CronHandler from './handler/cron/CronHandler';
 import ContaboHandler from './handler/external/ContaboHandler';
-import SecretsHelper from './helpers/secret_manager';
+import SecretsHelper from './helpers/secrets_helper';
 
 require('dotenv').config();
 admin.initializeApp();

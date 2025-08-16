@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Logger } from '@firebase/logger';
 import { Firestore, Timestamp } from 'firebase-admin/firestore';
-import SecretsHelper from '../../helpers/secret_manager';
+import SecretsHelper from '../../helpers/secrets_helper';
 import ContaboHandler from './ContaboHandler';
 
 interface PaymentData {

@@ -1,6 +1,6 @@
 import { Request, Response } from 'firebase-functions/v1';
 import { Logger } from '@firebase/logger';
-import SecretsHelper from '../../helpers/secret_manager';
+import SecretsHelper from '../../helpers/secrets_helper';
 import MpesaHandler from '../external/MpesaHandler';
 import { Firestore } from 'firebase-admin/firestore';
 
