@@ -19,6 +19,7 @@ module.exports = {
     "import",
   ],
   rules: {
+    "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/adjacent-overload-signatures": "error",
     "@typescript-eslint/no-empty-function": "error",
     "@typescript-eslint/no-empty-interface": "warn",
@@ -37,7 +38,7 @@ module.exports = {
     "import/no-unresolved": [
       'error',
       {
-        ignore: ['^firebase-admin/.+','^firebase-functions/.+'],
+        ignore: ['^firebase-admin/.+', '^firebase-functions/.+'],
       },
     ],
     "no-cond-assign": "error",
